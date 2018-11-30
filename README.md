@@ -35,3 +35,7 @@ the repo root:
 git submodule update --init --recursive
 cargo build
 ```
+
+## Usage
+
+See [`examples/`](examples/). It should be self-explanatory.
