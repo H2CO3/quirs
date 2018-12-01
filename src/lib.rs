@@ -1,7 +1,7 @@
 //! Wrapper around the `quirc` QR code decoder library.
 
 #![crate_name="quirs"]
-#![doc(html_root_url = "https://docs.rs/quirs/0.1.0")]
+#![doc(html_root_url = "https://docs.rs/quirs/0.1.1")]
 #![deny(missing_debug_implementations, missing_copy_implementations,
         trivial_casts, trivial_numeric_casts,
         unstable_features,
