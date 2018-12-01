@@ -30,7 +30,7 @@ impl Info {
         max(0, min(self.0.mask, 7)) as _
     }
 
-    /// Returns the ECI assignment number, in the range 0...30.
+    /// Returns the ECI assignment number, in the range `0...30`.
     #[cfg_attr(feature = "cargo-clippy", allow(cast_possible_truncation, cast_possible_wrap))]
     pub fn eci(&self) -> u8 {
         max(0, min(self.0.eci, 30)) as _
@@ -77,10 +77,9 @@ impl Info {
 
     /// Returns the raw payload of the QR code.
     pub fn payload(&self) -> &[u8] {
+        // This cast is safe because even if it over- or underflows,
+        // the result is still bounded by `[0, QUIRC_MAX_PAYLOAD]`.
         let len = max(0, min(self.0.payload_len as _, QUIRC_MAX_PAYLOAD));
-        // We statically know that `QUIRC_MAX_PAYLOAD` fits into a `usize`,
-        // which is always at least 16 bits long in Rust.
-        // Hence, this cast is safe.
         &self.0.payload[..len]
     }
 

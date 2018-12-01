@@ -3,6 +3,7 @@
 use std::ptr;
 use std::usize;
 use std::ffi::CStr;
+use libc::c_int;
 use geom::{ Image, QrCode };
 use quirc_sys::{ quirc, quirc_version, quirc_new, quirc_destroy };
 use quirc_sys::{ quirc_resize, quirc_begin, quirc_end };
@@ -58,11 +59,14 @@ impl Decoder {
                 ptr::null_mut(),
                 ptr::null_mut(),
             );
+            assert!(!buf_ptr.is_null(), "quirc_begin() returned null pointer");
+
             ptr::copy_nonoverlapping(
                 image_data.as_ptr(),
                 buf_ptr,
                 image_data.len(),
             );
+
             quirc_end(self.inner);
         }
 
@@ -87,18 +91,30 @@ pub struct Iter<'a> {
     /// A reference to the decoder where this iterator's contents come from.
     decoder: &'a mut Decoder,
     /// The index of the next image to process.
-    index: usize,
+    index: c_int,
+}
+
+impl<'a> Iter<'a> {
+    /// Returns the total count and the current index,
+    /// ensuring that both are non-negative.
+    fn count_and_index(&self) -> (c_int, c_int) {
+        let count = unsafe {
+            quirc_count(self.decoder.inner)
+        };
+        let index = self.index;
+
+        assert!(count >= 0, "quirc_count() was negative");
+        assert!(index >= 0, "current index was negative");
+
+        (count, index)
+    }
 }
 
 impl<'a> Iterator for Iter<'a> {
     type Item = Result<QrCode>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let raw_count = unsafe {
-            quirc_count(self.decoder.inner)
-        };
-        let count = int_to_usize(raw_count).ok()?;
-        let index = self.index;
+        let (count, index) = self.count_and_index();
 
         if index < count {
             // This is not `mem::uninitialized` because `quirc_extract()`
@@ -107,11 +123,8 @@ impl<'a> Iterator for Iter<'a> {
             // trust issues with underlying C libraries, so this remains a 0.
             let mut raw = quirc_code::default();
 
-            #[cfg_attr(feature = "cargo-clippy", allow(cast_possible_truncation, cast_possible_wrap))]
             unsafe {
-                // here the cast can't overflow/truncate because index < count,
-                // and count itself comes from a `c_int`.
-                quirc_extract(self.decoder.inner, index as _, &mut raw);
+                quirc_extract(self.decoder.inner, index, &mut raw);
             }
 
             self.index += 1;
@@ -123,12 +136,10 @@ impl<'a> Iterator for Iter<'a> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        int_to_usize(unsafe {
-            quirc_count(self.decoder.inner)
-        }).map(
-            |n| (n - self.index, Some(n - self.index))
-        ).unwrap_or(
-            (0, None) // we don't know if it under- or overflowed
-        )
+        let (count, index) = self.count_and_index();
+
+        int_to_usize(count - index)
+            .map(|n| (n, Some(n)))
+            .unwrap_or_default() // we don't know if it under- or overflowed
     }
 }

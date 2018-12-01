@@ -81,8 +81,8 @@ impl QrCode {
     /// Extracts the corner at the given index (0...3) as a `Vec2D`.
     fn corner_at(&self, i: usize) -> Vec2D {
         // This cannot panic because before the construction of the `QrCode`,
-        // the underlying `` is validated for representability as Rust types
-        // (underflow and overflow of `usize` etc.)
+        // the underlying `quirc_code` is validated for representability as
+        // Rust types (underflow and overflow of `usize` etc.)
         Vec2D::from_raw(self.0.corners[i]).expect("invalid corner coordinates")
     }
 
@@ -109,8 +109,8 @@ impl QrCode {
     /// The size (`width == height`) of the QR code bitmap.
     pub fn size(&self) -> usize {
         // This cannot panic because before the construction of the `QrCode`,
-        // the underlying `` is validated for representability as Rust types
-        // (underflow and overflow of `usize` etc.)
+        // the underlying `quirc_code` is validated for representability as
+        // Rust types (underflow and overflow of `usize` etc.)
         int_to_usize(self.0.size).expect("code size under- or overflows usize")
     }
 
